@@ -69,6 +69,32 @@ statemachine class MCM_RandomDialogPicker {
 
     // Got no time for this. You're dead.
     this.short_circuit_choices.PushBack(GetLocStringById(1092100));
+
+    // Surprise me.
+    this.short_circuit_choices.PushBack(GetLocStringById(1200406));
+
+    // Middle of the road, let's.
+    this.short_circuit_choices.PushBack(GetLocStringById(1200422));
+
+    // Need to change some coin.
+    this.short_circuit_choices.PushBack(GetLocStringById(1104418));
+    
+    // I'd like to change some coin.
+    this.short_circuit_choices.PushBack(GetLocStringById(1104531));
+
+    // Got something else to do here.
+    this.short_circuit_choices.PushBack(GetLocStringById(1200894));
+
+    // Cave I came out of… what was that place?
+    this.short_circuit_choices.PushBack(GetLocStringById(1156674));
+    this.short_circuit_choices.PushBack(GetLocStringById(1156732));
+
+    // Sure, why not
+    this.short_circuit_choices.PushBack(GetLocStringById(1171652));
+    this.short_circuit_choices.PushBack(GetLocStringById(1196346));
+
+    // Where'd you develop this interest in witchers' things?
+    this.short_circuit_choices.PushBack(GetLocStringById(1094253));
   }
 
   function isOptionalChoice(choice: SSceneChoice): bool {
