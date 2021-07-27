@@ -113,8 +113,7 @@ statemachine class MCM_RandomDialogPicker {
   }
 
   function isLeaveAction(choice: SSceneChoice): bool {
-    return !choice.emphasised
-        && choice.dialogAction == DialogAction_EXIT;
+    return choice.dialogAction == DialogAction_EXIT;
   }
 
   function isAction(choice: SSceneChoice): bool {
@@ -228,6 +227,11 @@ statemachine class MCM_RandomDialogPicker {
 
       // this.printChoice(choice);
 
+      // anytime there is a leave action, do not pick anything.
+      if (this.isLeaveAction(choice)) {
+        return;
+      }
+
       if (this.isShortCircuitChoice(choice)) {
         return false;
       }
@@ -237,7 +241,6 @@ statemachine class MCM_RandomDialogPicker {
         return false;
       }
 
-      has_leave_action = has_leave_action || this.isLeaveAction(choice);
       has_action_choice = has_action_choice || this.isAction(choice);
 
       if (choice.previouslyChoosen) {
@@ -287,16 +290,6 @@ statemachine class MCM_RandomDialogPicker {
         if (this.isEmphasised(choice)) {
           valid_choices.PushBack(i);
         }
-      }
-
-      // third if there is a leave action and nothing else
-      else if (has_leave_action && !has_action_choice) {
-        // commented while i find a way to avoid situations
-        // where it picks it when the player wants to replay a dialogue
-        //
-        // if (this.isLeaveAction(choice)) {
-        //   valid_choices.PushBack(i);
-        // }
       }
     }
 
