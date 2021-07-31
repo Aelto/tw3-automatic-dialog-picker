@@ -229,7 +229,7 @@ statemachine class MCM_RandomDialogPicker {
 
       // anytime there is a leave action, do not pick anything.
       if (this.isLeaveAction(choice)) {
-        return;
+        return false;
       }
 
       if (this.isShortCircuitChoice(choice)) {
