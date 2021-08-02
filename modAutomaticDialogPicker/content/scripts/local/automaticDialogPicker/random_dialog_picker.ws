@@ -95,6 +95,9 @@ statemachine class MCM_RandomDialogPicker {
 
     // Where'd you develop this interest in witchers' things?
     this.short_circuit_choices.PushBack(GetLocStringById(1094253));
+
+    // You could've shown a little sympathy
+    this.short_circuit_choices.PushBack(GetLocStringById(481132));
   }
 
   function isOptionalChoice(choice: SSceneChoice): bool {
