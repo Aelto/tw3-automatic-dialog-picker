@@ -98,6 +98,12 @@ statemachine class MCM_RandomDialogPicker {
 
     // You could've shown a little sympathy
     this.short_circuit_choices.PushBack(GetLocStringById(481132));
+
+    // Family Matters: Resemblance is uncanny.
+    this.short_circuit_choices.PushBack(GetLocStringById(475532));
+
+    // Family Matters: Let's do this.
+    this.short_circuit_choices.PushBack(GetLocStringById(393189));
   }
 
   function isOptionalChoice(choice: SSceneChoice): bool {
