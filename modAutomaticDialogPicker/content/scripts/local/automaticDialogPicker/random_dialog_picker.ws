@@ -104,6 +104,9 @@ statemachine class MCM_RandomDialogPicker {
 
     // Family Matters: Let's do this.
     this.short_circuit_choices.PushBack(GetLocStringById(393189));
+
+    // Family Matters: Who'd you see? Describe her.
+    this.short_circuit_choices.PushBack(GetLocStringById(177966));
   }
 
   function isOptionalChoice(choice: SSceneChoice): bool {
