@@ -14,6 +14,24 @@ statemachine class MCM_RandomDialogPicker {
     this.GotoState('Loading');
   }
 
+  function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
+    // Family Matters: Talk to Fisherman
+    // Tell me about these marks.
+    if (choice.description == GetLocStringById(401244))
+      return 400;
+    // What happened next?
+    else if (choice.description == GetLocStringById(400689))
+      return 300;
+    // Why did you help them?
+    else if (choice.description == GetLocStringById(401246))
+      return 200;
+    // I know where Anna is.
+    else if (choice.description == GetLocStringById(400687))
+      return 100;
+
+    return 0;
+  }
+
   function loadShortCircuitChoices() {
     // "Need an armor repair table"
     // when upgrading the house in B&W
@@ -215,9 +233,13 @@ statemachine class MCM_RandomDialogPicker {
     var has_optional_choice: bool;
     var has_important_action_choice: bool;
     var read_optional_choices: int;
+    var better_flow_choice_weight: int;
+    var better_flow_choice_index: int;
     var choice: SSceneChoice;
     var index: int;
     var i: int;
+
+    better_flow_choice_weight = 0;
 
     if (choices.Size() == 0) {
       return false;
@@ -236,8 +258,16 @@ statemachine class MCM_RandomDialogPicker {
 
       // this.printChoice(choice);
 
+      if (!choice.previouslyChoosen && this.getBetterFlowChoiceWeight(choice) > 0) {
+            if (better_flow_choice_weight < this.getBetterFlowChoiceWeight(choice)) {
+              better_flow_choice_weight = this.getBetterFlowChoiceWeight(choice);
+              better_flow_choice_index = i;
+            }
+            continue;
+      }
+
       // anytime there is a leave action, do not pick anything.
-      if (this.isLeaveAction(choice)) {
+      if (this.isLeaveAction(choice) && better_flow_choice_weight <= 0) {
         return false;
       }
 
@@ -263,6 +293,12 @@ statemachine class MCM_RandomDialogPicker {
       }
 
       has_optional_choice = has_optional_choice || this.isOptionalChoice(choice);
+    }
+
+    if (better_flow_choice_weight > 0) {
+      this.picked_choice = better_flow_choice_index;
+      this.GotoState('RandomDialogPicked');
+      return true;
     }
 
     // there are actions that always require user attention
