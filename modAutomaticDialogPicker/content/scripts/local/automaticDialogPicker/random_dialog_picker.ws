@@ -1,3 +1,8 @@
+struct MCM_BetterFlowWeight {
+  var description: string;
+  var weight: int;
+}
+
 statemachine class MCM_RandomDialogPicker {
   var dialog_module: CR4HudModuleDialog;
   var picked_choice: int;
@@ -8,26 +13,43 @@ statemachine class MCM_RandomDialogPicker {
    * as read or choices that should be emphasised but are not.
    */
   var short_circuit_choices: array<string>;
+  var better_flow_weights: array<MCM_BetterFlowWeight>;
 
   function init(module: CR4HudModuleDialog) {
     this.dialog_module = module;
     this.GotoState('Loading');
   }
 
-  function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
+  function loadBetterFlowChoiceWeights() {
+    var better_flow_choice: MCM_BetterFlowWeight;
+
     // Family Matters: Talk to Fisherman
     // Tell me about these marks.
-    if (choice.description == GetLocStringById(401244))
-      return 400;
+    better_flow_choice.description = GetLocStringById(401244);
+    better_flow_choice.weight = 400;
+    this.better_flow_weights.PushBack(better_flow_choice);
     // What happened next?
-    else if (choice.description == GetLocStringById(400689))
-      return 300;
+    better_flow_choice.description = GetLocStringById(400689);
+    better_flow_choice.weight = 300;
+    this.better_flow_weights.PushBack(better_flow_choice);
     // Why did you help them?
-    else if (choice.description == GetLocStringById(401246))
-      return 200;
+    better_flow_choice.description = GetLocStringById(401246);
+    better_flow_choice.weight = 200;
+    this.better_flow_weights.PushBack(better_flow_choice);
     // I know where Anna is.
-    else if (choice.description == GetLocStringById(400687))
-      return 100;
+    better_flow_choice.description = GetLocStringById(400687);
+    better_flow_choice.weight = 100;
+    this.better_flow_weights.PushBack(better_flow_choice);
+  }
+
+  function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
+    var i: int;
+
+    for (i = 0; i < this.better_flow_weights.Size(); i += 1) {
+      if (this.better_flow_weights[i].description == choice.description) {
+        return this.better_flow_weights[i].weight;
+      }
+    }
 
     return 0;
   }
@@ -233,6 +255,7 @@ statemachine class MCM_RandomDialogPicker {
     var has_optional_choice: bool;
     var has_important_action_choice: bool;
     var read_optional_choices: int;
+    var current_choice_weight: int;
     var better_flow_choice_weight: int;
     var better_flow_choice_index: int;
     var choice: SSceneChoice;
@@ -258,9 +281,11 @@ statemachine class MCM_RandomDialogPicker {
 
       // this.printChoice(choice);
 
-      if (!choice.previouslyChoosen && this.getBetterFlowChoiceWeight(choice) > 0) {
-            if (better_flow_choice_weight < this.getBetterFlowChoiceWeight(choice)) {
-              better_flow_choice_weight = this.getBetterFlowChoiceWeight(choice);
+      current_choice_weight = this.getBetterFlowChoiceWeight(choice);
+
+      if (!choice.previouslyChoosen && current_choice_weight > 0) {
+            if (better_flow_choice_weight < current_choice_weight) {
+              better_flow_choice_weight = current_choice_weight;
               better_flow_choice_index = i;
             }
             continue;
@@ -358,6 +383,7 @@ state Loading in MCM_RandomDialogPicker {
 
   entry function Loading_main() {
     parent.loadShortCircuitChoices();
+    parent.loadBetterFlowChoiceWeights();
     parent.GotoState('Waiting');
   }
 }
