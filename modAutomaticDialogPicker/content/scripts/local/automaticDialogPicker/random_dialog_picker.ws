@@ -38,6 +38,12 @@ statemachine class MCM_RandomDialogPicker {
     this.setBetterFlowChoiceWeight(GetLocStringById(401246), 200);
     // I know where Anna is.
     this.setBetterFlowChoiceWeight(GetLocStringById(400687), 100);
+
+    // A Towerful of Mice: Talk with Keira
+    // Xenovox - never heard of that.
+    this.setBetterFlowChoiceWeight(GetLocStringById(520972), 200);
+    // Where'd you get the xenovox?
+    this.setBetterFlowChoiceWeight(GetLocStringById(520974), 100);
   }
 
   function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
