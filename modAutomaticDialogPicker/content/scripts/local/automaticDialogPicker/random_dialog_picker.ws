@@ -147,6 +147,9 @@ statemachine class MCM_RandomDialogPicker {
 
     // Family Matters: Who'd you see? Describe her.
     this.short_circuit_choices.PushBack(GetLocStringById(177966));
+
+    // Magic Lamp: Repeat the inscription.
+    this.short_circuit_choices.PushBack(GetLocStringById(558241));
   }
 
   function isOptionalChoice(choice: SSceneChoice): bool {
