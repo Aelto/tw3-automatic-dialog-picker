@@ -20,26 +20,30 @@ statemachine class MCM_RandomDialogPicker {
     this.GotoState('Loading');
   }
 
-  function loadBetterFlowChoiceWeights() {
+  function setBetterFlowChoiceWeight(choice_description: string, choice_weight: int) {
     var better_flow_choice: MCM_BetterFlowWeight;
 
+    better_flow_choice.description = choice_description;
+    better_flow_choice.weight = choice_weight;
+    this.better_flow_weights.PushBack(better_flow_choice);
+  }
+
+  function loadBetterFlowChoiceWeights() {
     // Family Matters: Talk to Fisherman
     // Tell me about these marks.
-    better_flow_choice.description = GetLocStringById(401244);
-    better_flow_choice.weight = 400;
-    this.better_flow_weights.PushBack(better_flow_choice);
+    this.setBetterFlowChoiceWeight(GetLocStringById(401244), 400);
     // What happened next?
-    better_flow_choice.description = GetLocStringById(400689);
-    better_flow_choice.weight = 300;
-    this.better_flow_weights.PushBack(better_flow_choice);
+    this.setBetterFlowChoiceWeight(GetLocStringById(400689), 300);
     // Why did you help them?
-    better_flow_choice.description = GetLocStringById(401246);
-    better_flow_choice.weight = 200;
-    this.better_flow_weights.PushBack(better_flow_choice);
+    this.setBetterFlowChoiceWeight(GetLocStringById(401246), 200);
     // I know where Anna is.
-    better_flow_choice.description = GetLocStringById(400687);
-    better_flow_choice.weight = 100;
-    this.better_flow_weights.PushBack(better_flow_choice);
+    this.setBetterFlowChoiceWeight(GetLocStringById(400687), 100);
+
+    // A Towerful of Mice: Talk with Keira
+    // Xenovox - never heard of that.
+    this.setBetterFlowChoiceWeight(GetLocStringById(520972), 200);
+    // Where'd you get the xenovox?
+    this.setBetterFlowChoiceWeight(GetLocStringById(520974), 100);
   }
 
   function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
