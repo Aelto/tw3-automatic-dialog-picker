@@ -15,6 +15,12 @@ statemachine class MCM_RandomDialogPicker {
   var short_circuit_choices: array<string>;
   var better_flow_weights: array<MCM_BetterFlowWeight>;
 
+  /**
+   * stores the current region the player is in. It is set after every loading
+   * screen so it will always correspond.
+   */
+  var current_region: string;
+
   function init(module: CR4HudModuleDialog) {
     this.dialog_module = module;
     this.GotoState('Loading');
@@ -295,7 +301,8 @@ statemachine class MCM_RandomDialogPicker {
       }
 
       // anytime there is a leave action, do not pick anything.
-      if (this.isLeaveAction(choice) && better_flow_choice_weight <= 0) {
+      // but do this only in Toussaint, as this is where it causes most issues.
+      if (this.current_region == "bob" && this.isLeaveAction(choice) && better_flow_choice_weight <= 0) {
         return false;
       }
 
@@ -308,6 +315,7 @@ statemachine class MCM_RandomDialogPicker {
         return false;
       }
 
+      has_leave_action = has_leave_action || this.isLeaveAction(choice);
       has_action_choice = has_action_choice || this.isAction(choice);
 
       if (choice.previouslyChoosen) {
@@ -364,6 +372,16 @@ statemachine class MCM_RandomDialogPicker {
           valid_choices.PushBack(i);
         }
       }
+
+      // third if there is a leave action and nothing else
+      else if (has_leave_action && !has_action_choice) {
+        // commented while i find a way to avoid situations
+        // where it picks it when the player wants to replay a dialogue
+        //
+        if (this.isLeaveAction(choice)) {
+          valid_choices.PushBack(i);
+        }
+      }
     }
 
     if (valid_choices.Size() == 0) {
@@ -387,6 +405,7 @@ state Loading in MCM_RandomDialogPicker {
   entry function Loading_main() {
     parent.loadShortCircuitChoices();
     parent.loadBetterFlowChoiceWeights();
+    parent.current_region = AreaTypeToName(theGame.GetCommonMapManager().GetCurrentArea());
     parent.GotoState('Waiting');
   }
 }
