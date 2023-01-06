@@ -1,58 +1,193 @@
+struct MCM_RandomDialogPickerResult {
+  var choice_automated : bool;
+  var filtered_choices : array<SSceneChoice>;
+}
+
 struct MCM_BetterFlowWeight {
   var description: string;
   var weight: int;
 }
 
+struct MCM_IndexedChoice {
+  var simulated_index : int;
+	var choice: SSceneChoice;
+}
+
 statemachine class MCM_RandomDialogPicker {
-  var dialog_module: CR4HudModuleDialog;
-  var picked_choice: int;
+  protected var dialog_module: CR4HudModuleDialog;
+  protected var picked_choice_index: int;
+  protected var filtered_indexed_choices: array<MCM_IndexedChoice>;
 
   /**
    * choices that short circuit the mod if seen.
    * Those are mostly bugged choices that CDPR missed, choices that never turn
    * as read or choices that should be emphasised but are not.
    */
-  var short_circuit_choices: array<string>;
-  var better_flow_weights: array<MCM_BetterFlowWeight>;
+  protected var short_circuit_choices: array<string>;
+  protected var better_flow_weights: array<MCM_BetterFlowWeight>;
 
   /**
    * stores the current region the player is in. It is set after every loading
    * screen so it will always correspond.
    */
-  var current_region: string;
+  protected current_region: string;
 
-  function init(module: CR4HudModuleDialog) {
+  public function init(module: CR4HudModuleDialog) {
     this.dialog_module = module;
     this.GotoState('Loading');
   }
 
-  function setBetterFlowChoiceWeight(choice_description: string, choice_weight: int) {
-    var better_flow_choice: MCM_BetterFlowWeight;
+  public function handleCurrentChoices(choices: array<SSceneChoice>): MCM_RandomDialogPickerResult {
+    var result: MCM_RandomDialogPickerResult;
+    var valid_choice_indices: array<int>;
+    var has_leave_action: bool;
+    var has_action_choice: bool;
+    var emphasized_choices_count: int;
+    var has_optional_choice: bool;
+    var has_important_action_choice: bool;
+    var read_optional_choices_count: int;
+    var current_choice_weight: int;
+    var better_flow_choice_weight: int;
+    var better_flow_choice_index: int;
+    var current_choice: SSceneChoice;
+    var i: int;
 
-    better_flow_choice.description = choice_description;
-    better_flow_choice.weight = choice_weight;
-    this.better_flow_weights.PushBack(better_flow_choice);
+    better_flow_choice_weight = 0;
+    filtered_indexed_choices = toFilteredIndexedChoices(choices);
+
+    if (filtered_indexed_choices.Size() == 0) {
+      return makeResult(filtered_indexed_choices, false);
+    }
+
+    // this is a safety mechanism to make sure that if there is only one choice and we don't automate
+    // that the game selects the simulated index of the 0th element (instead of an element that may have
+    // been filtered)
+    dialog_module.OnDialogOptionSelected(0);
+
+    // this is a safety key to force the mod to show the option. There are cases
+    // where it loops over and over and this keybind helps get out of them.
+    if (theInput.IsActionPressed('ChangeChoiceDown') || theInput.IsActionPressed('ChangeChoiceUp')) {
+      return makeResult(filtered_indexed_choices, false);
+    }
+
+    // first we do a pass to gather information about the types of choices and
+    // what we'll focus on later
+    for (i = 0; i < filtered_indexed_choices.Size(); i += 1) {
+      current_choice = filtered_indexed_choices[i].choice;
+
+      current_choice_weight = this.getBetterFlowChoiceWeight(current_choice);
+
+      if (!current_choice.previouslyChoosen && current_choice_weight > 0) {
+            if (better_flow_choice_weight < current_choice_weight) {
+              better_flow_choice_weight = current_choice_weight;
+              better_flow_choice_index = i;
+            }
+            continue;
+      }
+
+      // anytime there is a leave action, do not pick anything.
+      // but do this only in Toussaint, as this is where it causes most issues.
+      if (this.currentRegion == "bob" && this.isLeaveAction(current_choice) && better_flow_choice_weight <= 0) {
+        return makeResult(filtered_indexed_choices, false);
+      }
+
+      if (this.isShortCircuitChoice(current_choice)) {
+        return makeResult(filtered_indexed_choices, false);
+      }
+
+      // important choice that requires user attention, we leave instantly
+      if (this.isImportantAction(current_choice)) {
+        return makeResult(filtered_indexed_choices, false);
+      }
+
+      has_leave_action = has_leave_action || this.isLeaveAction(current_choice);
+      has_action_choice = has_action_choice || this.isAction(current_choice);
+
+      if (current_choice.previouslyChoosen) {
+        read_optional_choices_count += (int)this.isReadOptionalChoice(current_choice);
+
+        continue;
+      }
+
+      if (this.isEmphasised(current_choice)) {
+        emphasized_choices_count += 1;
+      }
+
+      has_optional_choice = has_optional_choice || this.isOptionalChoice(current_choice);
+    }
+
+    if (better_flow_choice_weight > 0) {
+      this.picked_choice_index = better_flow_choice_index;
+      this.GotoState('RandomDialogPicked');
+      return makeResult(filtered_indexed_choices, true);
+    }
+
+    // there are actions that always require user attention
+    if (has_important_action_choice) {
+      return makeResult(filtered_indexed_choices, false);
+    }
+
+    // when there are two choices, let the player pick. But the optional choices
+    // are always played first so it's safe to let them go first.
+    if (emphasized_choices_count > 1 && !has_optional_choice) {
+      return makeResult(filtered_indexed_choices, false);
+    }
+
+    // when there are multiple optional choices and nothing else
+    if (read_optional_choices_count > 1
+        && !emphasized_choices_count
+        && !has_action_choice
+        && !has_optional_choice) {
+      return makeResult(filtered_indexed_choices, false);
+    }
+
+    for (i = 0; i < filtered_indexed_choices.Size(); i += 1) {
+      current_choice = filtered_indexed_choices[i].choice;
+
+      // most important are optional dialogues
+      if (has_optional_choice) {
+        if (this.isOptionalChoice(current_choice)) {
+          valid_choice_indices.PushBack(i);
+        }
+      }
+
+      // second most important are quest choices
+      else if (emphasized_choices_count > 0) {
+        if (this.isEmphasised(current_choice)) {
+          valid_choice_indices.PushBack(i);
+        }
+      }
+
+      // third if there is a leave action and nothing else
+      else if (has_leave_action && !has_action_choice) {
+        // commented while i find a way to avoid situations
+        // where it picks it when the player wants to replay a dialogue
+        //
+        if (this.isLeaveAction(current_choice)) {
+          valid_choice_indices.PushBack(i);
+        }
+      }
+    }
+
+    if (valid_choice_indices.Size() == 0) {
+      return makeResult(filtered_indexed_choices, false);
+    }
+
+    this.picked_choice_index = valid_choice_indices[RandRange(valid_choice_indices.Size())];
+    this.GotoState('RandomDialogPicked');
+
+    return makeResult(filtered_indexed_choices, true);
   }
 
-  function loadBetterFlowChoiceWeights() {
-    // Family Matters: Talk to Fisherman
-    // Tell me about these marks.
-    this.setBetterFlowChoiceWeight(GetLocStringById(401244), 400);
-    // What happened next?
-    this.setBetterFlowChoiceWeight(GetLocStringById(400689), 300);
-    // Why did you help them?
-    this.setBetterFlowChoiceWeight(GetLocStringById(401246), 200);
-    // I know where Anna is.
-    this.setBetterFlowChoiceWeight(GetLocStringById(400687), 100);
-
-    // A Towerful of Mice: Talk with Keira
-    // Xenovox - never heard of that.
-    this.setBetterFlowChoiceWeight(GetLocStringById(520972), 200);
-    // Where'd you get the xenovox?
-    this.setBetterFlowChoiceWeight(GetLocStringById(520974), 100);
+  public function toSimulatedIndex(index: int) : int {
+    if(index < filtered_indexed_choices.Size()) {
+      return filtered_indexed_choices[index].simulated_index;
+    } else {
+      return index;
+    }
   }
 
-  function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
+  protected function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
     var i: int;
 
     for (i = 0; i < this.better_flow_weights.Size(); i += 1) {
@@ -64,140 +199,42 @@ statemachine class MCM_RandomDialogPicker {
     return 0;
   }
 
-  function loadShortCircuitChoices() {
-    // "Need an armor repair table"
-    // when upgrading the house in B&W
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(1187179)
-    );
-
-    // "Let's do some work on the house"
-    // when upgrading the house in B&W
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(1187165)
-    );
-
-    // "The grounds - be nice to improve those."
-    // when upgrading the house in B&W
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(1187166)
-    );
-
-    // "Need a loan."
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(1032393)
-    );
-
-    // "Wanna pay back my loan."
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(1032416)
-    );
-
-    // Nothing to mourn. They were Nilfgaardians.
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(570554)
-    );
-
-    // Same as above, duplicated for some reason
-    this.short_circuit_choices.PushBack(
-      GetLocStringById(570560)
-    );
-
-    // Refuse to chase down some goat.
-    this.short_circuit_choices.PushBack(GetLocStringById(472848));
-
-    // Don't talk to her that way.
-    this.short_circuit_choices.PushBack(GetLocStringById(433741));
-    this.short_circuit_choices.PushBack(GetLocStringById(433743));
-
-    // You can't torture Triss. I won't allow it.
-    this.short_circuit_choices.PushBack(GetLocStringById(380941));
-    // no other way?
-    this.short_circuit_choices.PushBack(GetLocStringById(380987));
-    // I'm looking for this treasure…
-    this.short_circuit_choices.PushBack(GetLocStringById(434433));
-
-    // Got no time for this. You're dead.
-    this.short_circuit_choices.PushBack(GetLocStringById(1092100));
-
-    // Surprise me.
-    this.short_circuit_choices.PushBack(GetLocStringById(1200406));
-
-    // Middle of the road, let's.
-    this.short_circuit_choices.PushBack(GetLocStringById(1200422));
-
-    // Need to change some coin.
-    this.short_circuit_choices.PushBack(GetLocStringById(1104418));
-    
-    // I'd like to change some coin.
-    this.short_circuit_choices.PushBack(GetLocStringById(1104531));
-
-    // Got something else to do here.
-    this.short_circuit_choices.PushBack(GetLocStringById(1200894));
-
-    // Cave I came out of… what was that place?
-    this.short_circuit_choices.PushBack(GetLocStringById(1156674));
-    this.short_circuit_choices.PushBack(GetLocStringById(1156732));
-
-    // Sure, why not
-    this.short_circuit_choices.PushBack(GetLocStringById(1171652));
-    this.short_circuit_choices.PushBack(GetLocStringById(1196346));
-
-    // Where'd you develop this interest in witchers' things?
-    this.short_circuit_choices.PushBack(GetLocStringById(1094253));
-
-    // You could've shown a little sympathy
-    this.short_circuit_choices.PushBack(GetLocStringById(481132));
-
-    // Family Matters: Resemblance is uncanny.
-    this.short_circuit_choices.PushBack(GetLocStringById(475532));
-
-    // Family Matters: Let's do this.
-    this.short_circuit_choices.PushBack(GetLocStringById(393189));
-
-    // Family Matters: Who'd you see? Describe her.
-    this.short_circuit_choices.PushBack(GetLocStringById(177966));
-
-    // Magic Lamp: Repeat the inscription.
-    this.short_circuit_choices.PushBack(GetLocStringById(558241));
-  }
-
-  function isOptionalChoice(choice: SSceneChoice): bool {
+  protected function isOptionalChoice(choice: SSceneChoice): bool {
     return this.isReadOptionalChoice(choice)
         && !choice.previouslyChoosen;
   }
 
-  function isReadOptionalChoice(choice: SSceneChoice): bool {
+  protected function isReadOptionalChoice(choice: SSceneChoice): bool {
     return !choice.emphasised
         && choice.dialogAction == DialogAction_NONE;
   }
 
-  function isEmphasised(choice: SSceneChoice): bool {
+  protected function isEmphasised(choice: SSceneChoice): bool {
     return choice.emphasised
         && !choice.previouslyChoosen;
   }
 
-  function isLeaveAction(choice: SSceneChoice): bool {
+  protected function isLeaveAction(choice: SSceneChoice): bool {
     return choice.dialogAction == DialogAction_EXIT;
   }
 
-  function isAction(choice: SSceneChoice): bool {
+  protected function isAction(choice: SSceneChoice): bool {
     return !choice.emphasised
         && choice.dialogAction != DialogAction_NONE
         && !this.isLeaveAction(choice);
   }
 
-  function isBribeAction(choice: SSceneChoice): bool {
+  protected function isBribeAction(choice: SSceneChoice): bool {
     return choice.dialogAction == DialogAction_BRIBE
         || choice.dialogAction == DialogAction_MONSTERCONTRACT;
   }
 
-  function isAxiiAction(choice: SSceneChoice): bool {
+  protected function isAxiiAction(choice: SSceneChoice): bool {
     return choice.dialogAction == DialogAction_AXII
         || choice.dialogAction == DialogAction_PERSUASION;
   }
 
-  function isImportantAction(choice: SSceneChoice): bool {
+  protected function isImportantAction(choice: SSceneChoice): bool {
     return this.isBribeAction(choice)
         || this.isAxiiAction(choice)
         || choice.dialogAction == DialogAction_HOUSE
@@ -225,7 +262,7 @@ statemachine class MCM_RandomDialogPicker {
         || this.hasImportantWord(choice.description);
   }
 
-  function hasImportantWord(description: string): bool {
+  protected function hasImportantWord(description: string): bool {
     var lowercase: string;
 
     lowercase = StrLower(description);
@@ -240,7 +277,7 @@ statemachine class MCM_RandomDialogPicker {
         || StrContains(lowercase, "a round");
   }
 
-  function isShortCircuitChoice(choice: SSceneChoice): bool {
+  protected function isShortCircuitChoice(choice: SSceneChoice): bool {
     var i: int;
 
     for (i = 0; i < this.short_circuit_choices.Size(); i += 1) {
@@ -252,154 +289,61 @@ statemachine class MCM_RandomDialogPicker {
     return false;
   }
 
-  function printChoice(choice: SSceneChoice) {
+  protected function makeResult(filtered_indexed_choices: array<MCM_IndexedChoice>, choice_automated: bool): MCM_RandomDialogPickerResult {
+    var result: MCM_RandomDialogPickerResult;
+
+    result.choice_automated = choice_automated;
+    result.filtered_choices = toSceneChoices(filtered_indexed_choices);
+
+    return result;
+  }
+
+  protected function toFilteredIndexedChoices(choices: array<SSceneChoice>): array<MCM_IndexedChoice> {
+    var i: int;
+    var filtered_indexed_choices: array<MCM_IndexedChoice>;
+
+    for(i = 0; i < choices.Size(); i += 1)
+    {
+      if(
+        !choices[i].previouslyChoosen ||
+        this.isEmphasised(choices[i]) ||
+        this.isAction(choices[i]) ||
+        this.isLeaveAction(choices[i]))
+      {
+        filtered_indexed_choices.PushBack(toIndexedChoice(choices[i], i));
+      }
+    }
+
+    return filtered_indexed_choices;
+  }
+
+  protected function toIndexedChoice(choice: SSceneChoice, simulated_index: int): MCM_IndexedChoice {
+    var indexedChoice: MCM_IndexedChoice;
+    
+    indexedChoice.simulatedIndex = simulated_index;
+    indexedChoice.choice = choice;
+
+    return indexedChoice;
+  }
+
+  private function toSceneChoices(indexed_choices: array<MCM_IndexedChoice>): array<SSceneChoice> {
+    var i: int;
+    var choices: array<SSceneChoice>;
+
+    for(i = 0; i < indexed_choices.Size(); i += 1) {
+      choices.PushBack(indexed_choices[i].choice);
+    }
+
+    return choices;
+  }
+
+  protected function printChoice(choice: SSceneChoice) {
     // NLOG(
     //   "is emphasised: " + choice.emphasised +
     //   " action: " + choice.dialogAction +
     //   " chunk: " + choice.playGoChunk +
     //   " previouslyChoosen: " + choice.previouslyChoosen +
     //   " description: " + choice.description);
-  }
-
-
-  function getRandomChoiceToPick(choices: array<SSceneChoice>): bool {
-    var valid_choices: array<int>;
-    var can_randomly_pick_choice: bool;
-    var has_leave_action: bool;
-    var has_action_choice: bool;
-    var has_emphasised_choices: int;
-    var has_optional_choice: bool;
-    var has_important_action_choice: bool;
-    var read_optional_choices: int;
-    var current_choice_weight: int;
-    var better_flow_choice_weight: int;
-    var better_flow_choice_index: int;
-    var choice: SSceneChoice;
-    var index: int;
-    var i: int;
-
-    better_flow_choice_weight = 0;
-
-    if (choices.Size() == 0) {
-      return false;
-    }
-
-    // this is a safety key to force the mod to show the option. There are cases
-    // where it loops over and over and this keybind helps get out of them.
-    if (theInput.IsActionPressed('ChangeChoiceDown') || theInput.IsActionPressed('ChangeChoiceUp')) {
-      return false;
-    }
-
-    // first we do a pass to gather information about the types of choices and
-    // what we'll focus on later
-    for (i = 0; i < choices.Size(); i += 1) {
-      choice = choices[i];
-
-      // this.printChoice(choice);
-
-      current_choice_weight = this.getBetterFlowChoiceWeight(choice);
-
-      if (!choice.previouslyChoosen && current_choice_weight > 0) {
-            if (better_flow_choice_weight < current_choice_weight) {
-              better_flow_choice_weight = current_choice_weight;
-              better_flow_choice_index = i;
-            }
-            continue;
-      }
-
-      // anytime there is a leave action, do not pick anything.
-      // but do this only in Toussaint, as this is where it causes most issues.
-      if (this.current_region == "bob" && this.isLeaveAction(choice) && better_flow_choice_weight <= 0) {
-        return false;
-      }
-
-      if (this.isShortCircuitChoice(choice)) {
-        return false;
-      }
-
-      // important choice that requires user attention, we leave instantly
-      if (this.isImportantAction(choice)) {
-        return false;
-      }
-
-      has_leave_action = has_leave_action || this.isLeaveAction(choice);
-      has_action_choice = has_action_choice || this.isAction(choice);
-
-      if (choice.previouslyChoosen) {
-        read_optional_choices += (int)this.isReadOptionalChoice(choice);
-
-        continue;
-      }
-
-      if (this.isEmphasised(choice)) {
-        has_emphasised_choices += 1;
-      }
-
-      has_optional_choice = has_optional_choice || this.isOptionalChoice(choice);
-    }
-
-    if (better_flow_choice_weight > 0) {
-      this.picked_choice = better_flow_choice_index;
-      this.GotoState('RandomDialogPicked');
-      return true;
-    }
-
-    // there are actions that always require user attention
-    if (has_important_action_choice) {
-      return false;
-    }
-
-    // when there are two choices, let the player pick. But the optional choices
-    // are always played first so it's safe to let them go first.
-    if (has_emphasised_choices > 1 && !has_optional_choice) {
-      return false;
-    }
-
-    // when there are multiple optional choices and nothing else
-    if (read_optional_choices > 1
-    && !has_emphasised_choices
-    && !has_action_choice
-    && !has_optional_choice) {
-      return false;
-    }
-
-    for (i = 0; i < choices.Size(); i += 1) {
-      choice = choices[i];
-
-      // most important are optional dialogues
-      if (has_optional_choice) {
-        if (this.isOptionalChoice(choice)) {
-          valid_choices.PushBack(i);
-        }
-      }
-
-      // second most important are quest choices
-      else if (has_emphasised_choices > 0) {
-        if (this.isEmphasised(choice)) {
-          valid_choices.PushBack(i);
-        }
-      }
-
-      // third if there is a leave action and nothing else
-      else if (has_leave_action && !has_action_choice) {
-        // commented while i find a way to avoid situations
-        // where it picks it when the player wants to replay a dialogue
-        //
-        if (this.isLeaveAction(choice)) {
-          valid_choices.PushBack(i);
-        }
-      }
-    }
-
-    if (valid_choices.Size() == 0) {
-      return false;
-    }
-
-    index = RandRange(valid_choices.Size());
-    this.picked_choice = valid_choices[index];
-    this.GotoState('RandomDialogPicked');
-
-    return true;
   }
 }
 
@@ -410,10 +354,134 @@ state Loading in MCM_RandomDialogPicker {
   }
 
   entry function Loading_main() {
-    parent.loadShortCircuitChoices();
-    parent.loadBetterFlowChoiceWeights();
+    this.loadShortCircuitChoices();
+    this.loadbetter_flow_choice_weights();
     parent.current_region = AreaTypeToName(theGame.GetCommonMapManager().GetCurrentArea());
     parent.GotoState('Waiting');
+  }
+
+  function loadShortCircuitChoices() {
+    // "Need an armor repair table"
+    // when upgrading the house in B&W
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(1187179)
+    );
+
+    // "Let's do some work on the house"
+    // when upgrading the house in B&W
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(1187165)
+    );
+
+    // "The grounds - be nice to improve those."
+    // when upgrading the house in B&W
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(1187166)
+    );
+
+    // "Need a loan."
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(1032393)
+    );
+
+    // "Wanna pay back my loan."
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(1032416)
+    );
+
+    // Nothing to mourn. They were Nilfgaardians.
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(570554)
+    );
+
+    // Same as above, duplicated for some reason
+    parent.short_circuit_choices.PushBack(
+      GetLocStringById(570560)
+    );
+
+    // Refuse to chase down some goat.
+    parent.short_circuit_choices.PushBack(GetLocStringById(472848));
+
+    // Don't talk to her that way.
+    parent.short_circuit_choices.PushBack(GetLocStringById(433741));
+    parent.short_circuit_choices.PushBack(GetLocStringById(433743));
+
+    // You can't torture Triss. I won't allow it.
+    parent.short_circuit_choices.PushBack(GetLocStringById(380941));
+    // no other way?
+    parent.short_circuit_choices.PushBack(GetLocStringById(380987));
+    // I'm looking for this treasure…
+    parent.short_circuit_choices.PushBack(GetLocStringById(434433));
+
+    // Got no time for this. You're dead.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1092100));
+
+    // Surprise me.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1200406));
+
+    // Middle of the road, let's.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1200422));
+
+    // Need to change some coin.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1104418));
+    
+    // I'd like to change some coin.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1104531));
+
+    // Got something else to do here.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1200894));
+
+    // Cave I came out of… what was that place?
+    parent.short_circuit_choices.PushBack(GetLocStringById(1156674));
+    parent.short_circuit_choices.PushBack(GetLocStringById(1156732));
+
+    // Sure, why not
+    parent.short_circuit_choices.PushBack(GetLocStringById(1171652));
+    parent.short_circuit_choices.PushBack(GetLocStringById(1196346));
+
+    // Where'd you develop this interest in witchers' things?
+    parent.short_circuit_choices.PushBack(GetLocStringById(1094253));
+
+    // You could've shown a little sympathy
+    parent.short_circuit_choices.PushBack(GetLocStringById(481132));
+
+    // Family Matters: Resemblance is uncanny.
+    parent.short_circuit_choices.PushBack(GetLocStringById(475532));
+
+    // Family Matters: Let's do this.
+    parent.short_circuit_choices.PushBack(GetLocStringById(393189));
+
+    // Family Matters: Who'd you see? Describe her.
+    parent.short_circuit_choices.PushBack(GetLocStringById(177966));
+
+    // Magic Lamp: Repeat the inscription.
+    parent.short_circuit_choices.PushBack(GetLocStringById(558241));
+  }
+
+  function loadbetter_flow_choice_weights() {
+    // Family Matters: Talk to Fisherman
+    // Tell me about these marks.
+    this.setbetter_flow_choice_weight(GetLocStringById(401244), 400);
+    // What happened next?
+    this.setbetter_flow_choice_weight(GetLocStringById(400689), 300);
+    // Why did you help them?
+    this.setbetter_flow_choice_weight(GetLocStringById(401246), 200);
+    // I know where Anna is.
+    this.setbetter_flow_choice_weight(GetLocStringById(400687), 100);
+
+    // A Towerful of Mice: Talk with Keira
+    // Xenovox - never heard of that.
+    this.setbetter_flow_choice_weight(GetLocStringById(520972), 200);
+    // Where'd you get the xenovox?
+    this.setbetter_flow_choice_weight(GetLocStringById(520974), 100);
+  }
+
+  function setbetter_flow_choice_weight(choice_description: string, choice_weight: int) {
+    var better_flow_choice: MCM_BetterFlowWeight;
+
+    better_flow_choice.description = choice_description;
+    better_flow_choice.weight = choice_weight;
+    parent.better_flow_weights.PushBack(better_flow_choice);
   }
 }
 

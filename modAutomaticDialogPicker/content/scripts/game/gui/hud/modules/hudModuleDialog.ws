@@ -50,8 +50,10 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 	
 	protected var lastSetChoices 			: array< SSceneChoice >;
 
-  // modAutomaticDialogPicker - BEGIN
+	// modAutomaticDialogPicker - BEGIN
 	private var MCM_randomDialogPicker: MCM_RandomDialogPicker;
+	private var MCM_choiceAutomated: bool;
+		default MCM_choiceAutomated = false;
 	// modAutomaticDialogPicker - END
 
 	event  OnConfigUI()
@@ -85,7 +87,7 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 		subtitleScale = StringToInt(inGameConfigWrapper.GetVarValue('Hud', 'SubtitleScale'));
 		choiceScale = StringToInt(inGameConfigWrapper.GetVarValue('Hud', 'DialogChoiceScale'));
 
-    // modAutomaticDialogPicker - BEGIN
+		// modAutomaticDialogPicker - BEGIN
 		MCM_randomDialogPicker = new MCM_RandomDialogPicker in this;
 		MCM_randomDialogPicker.init(this);
 		// modAutomaticDialogPicker - END
@@ -118,7 +120,7 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 		LogChannel('DIALOG', "***************************" );
 		LogChannel('DIALOG', "OnDialogOptionSelected " + index );
 		LogChannel('DIALOG', "***************************" );
-		system.SendSignal( SSST_Highlight, index );
+		system.SendSignal( SSST_Highlight, MCM_randomDialogPicker.toSimulatedIndex(index) );  // modAutomaticDialogPicker
 	}
 
 	event  OnDialogOptionAccepted( index : int )
@@ -136,7 +138,7 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 		
 		if (!acceptedChoice.disabled)
 		{
-			system.SendSignal( SSST_Accept, index );
+			system.SendSignal( SSST_Accept, MCM_randomDialogPicker.toSimulatedIndex(index) );  // modAutomaticDialogPicker
 			
 			m_guiManager.RequestMouseCursor(false);
 			theGame.ForceUIAnalog(false);
@@ -252,13 +254,9 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 	{
 		m_fxSetAlternativeDialogOptionView.InvokeSelfOneArg( FlashArgBool(alternativeUI) );
 		SendDialogChoicesToUI(choices, true);
-		m_guiManager.RequestMouseCursor(!is_chosing_randomly); // modAutomaticDialogPicker
+		m_guiManager.RequestMouseCursor(!MCM_choiceAutomated); // modAutomaticDialogPicker
 		theGame.ForceUIAnalog(true);
 	}
-
-	// modAutomaticDialogPicker - BEGIN
-	var is_chosing_randomly: bool;
-	// modAutomaticDialogPicker - END
 	
 	private function SendDialogChoicesToUI( choices : array< SSceneChoice >, allowContentMissingDialog : bool)
 	{
@@ -269,6 +267,7 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 		var hasContentMissing		: bool;
 		var missingContent			: name;
 		var progress 				: float;
+		var automatedDialogResult	: MCM_RandomDialogPickerResult; //modAutomaticDialogPicker
 		
 		
 		var prefix : string;
@@ -279,10 +278,10 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 		
 		choiceFlashArray = flashValueStorage.CreateTempFlashArray();
 		
-		lastSetChoices = choices;
-
 		// modAutomaticDialogPicker - BEGIN
-		is_chosing_randomly = this.MCM_randomDialogPicker.getRandomChoiceToPick(choices);
+		automatedDialogResult = this.MCM_randomDialogPicker.handleCurrentChoices(choices);
+		MCM_choiceAutomated = automatedDialogResult.choiceAutomated;
+		lastSetChoices = automatedDialogResult.filteredChoices;
 		// modAutomaticDialogPicker - END
 		
 
