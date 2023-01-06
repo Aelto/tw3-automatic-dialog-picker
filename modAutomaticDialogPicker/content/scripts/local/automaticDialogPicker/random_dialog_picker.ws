@@ -30,7 +30,7 @@ statemachine class MCM_RandomDialogPicker {
    * stores the current region the player is in. It is set after every loading
    * screen so it will always correspond.
    */
-  protected current_region: string;
+  protected var current_region: string;
 
   public function init(module: CR4HudModuleDialog) {
     this.dialog_module = module;
@@ -87,7 +87,7 @@ statemachine class MCM_RandomDialogPicker {
 
       // anytime there is a leave action, do not pick anything.
       // but do this only in Toussaint, as this is where it causes most issues.
-      if (this.currentRegion == "bob" && this.isLeaveAction(current_choice) && better_flow_choice_weight <= 0) {
+      if (this.current_region == "bob" && this.isLeaveAction(current_choice) && better_flow_choice_weight <= 0) {
         return makeResult(filtered_indexed_choices, false);
       }
 
@@ -320,7 +320,7 @@ statemachine class MCM_RandomDialogPicker {
   protected function toIndexedChoice(choice: SSceneChoice, simulated_index: int): MCM_IndexedChoice {
     var indexedChoice: MCM_IndexedChoice;
     
-    indexedChoice.simulatedIndex = simulated_index;
+    indexedChoice.simulated_index = simulated_index;
     indexedChoice.choice = choice;
 
     return indexedChoice;
@@ -500,9 +500,9 @@ state RandomDialogPicked in MCM_RandomDialogPicker {
   }
 
   entry function RandomDialogPicked_main() {
-    parent.dialog_module.OnDialogOptionSelected(parent.picked_choice);
+    parent.dialog_module.OnDialogOptionSelected(parent.picked_choice_index);
     Sleep(0.4);
-    parent.dialog_module.OnDialogOptionAccepted(parent.picked_choice);
+    parent.dialog_module.OnDialogOptionAccepted(parent.picked_choice_index);
 
     parent.GotoState('Waiting');
   }

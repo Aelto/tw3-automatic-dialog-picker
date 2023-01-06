@@ -280,8 +280,8 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 		
 		// modAutomaticDialogPicker - BEGIN
 		automatedDialogResult = this.MCM_randomDialogPicker.handleCurrentChoices(choices);
-		MCM_choiceAutomated = automatedDialogResult.choiceAutomated;
-		lastSetChoices = automatedDialogResult.filteredChoices;
+		MCM_choiceAutomated = automatedDialogResult.choice_automated;
+		lastSetChoices = automatedDialogResult.filtered_choices;
 		// modAutomaticDialogPicker - END
 		
 
@@ -294,7 +294,7 @@ class CR4HudModuleDialog extends CR4HudModuleBase
 
 
 		// modAutomaticDialogPicker - BEGIN & END
-		for ( i = 0; i < lastSetChoices.Size() && !is_chosing_randomly; i += 1 )
+		for ( i = 0; i < lastSetChoices.Size() && !MCM_choiceAutomated; i += 1 )
 		{
 		
 			
