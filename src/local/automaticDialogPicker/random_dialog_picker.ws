@@ -10,7 +10,7 @@ struct MCM_BetterFlowWeight {
 
 struct MCM_IndexedChoice {
   var simulated_index : int;
-	var choice: SSceneChoice;
+  var choice: SSceneChoice;
 }
 
 statemachine class MCM_RandomDialogPicker {
