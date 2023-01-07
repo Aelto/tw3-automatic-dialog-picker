@@ -54,25 +54,17 @@ statemachine class MCM_RandomDialogPicker {
 
     better_flow_choice_weight = 0;
 
-    // handle special case where all choices are optional and mod settings are set to filter all
-    // optional (thus rendering us stuck).
-    if(MCMConfig_getOptionalDialogFilterLevel() == EMCM_All && allChoicesOptional(choices)) {
-      if(MCMConfig_automateChoices()) {
-        // if we are automating randomly choose
-        choices[RandRange(choices.Size())].emphasised = true;
-      } else {
-        // if we aren't automating, make the game think that all the optional choices are
-        // emphasized so that the player is prompted as if it was important
-        for(i = 0; i < choices.Size(); i += 1) {
-          choices[i].emphasised = true;
-        }
-      }
-      
+    // this is a safety key to force the mod to show the option. There are cases
+    // where it loops over and over and this keybind helps get out of them.
+    if (theInput.IsActionPressed('ChangeChoiceDown') || theInput.IsActionPressed('ChangeChoiceUp')) {
+      return makeResultFromSceneChoices(choices, false);
     }
 
+    // filters possible choices based on mod settings
     filtered_indexed_choices = toFilteredIndexedChoices(choices);
     if (filtered_indexed_choices.Size() == 0) {
-      return makeResult(filtered_indexed_choices, false);
+      //uh oh we filtered everything... just send the original choices through!
+      return makeResultFromSceneChoices(choices, false);
     }
 
     // this is a safety mechanism to make sure that if there is only one choice and we don't automate
@@ -82,12 +74,6 @@ statemachine class MCM_RandomDialogPicker {
 
     // due to mod settings, prevent automation
     if(!MCMConfig_automateChoices()) {
-      return makeResult(filtered_indexed_choices, false);
-    }
-
-    // this is a safety key to force the mod to show the option. There are cases
-    // where it loops over and over and this keybind helps get out of them.
-    if (theInput.IsActionPressed('ChangeChoiceDown') || theInput.IsActionPressed('ChangeChoiceUp')) {
       return makeResult(filtered_indexed_choices, false);
     }
 
@@ -316,10 +302,14 @@ statemachine class MCM_RandomDialogPicker {
   }
 
   protected function makeResult(filtered_indexed_choices: array<MCM_IndexedChoice>, choice_automated: bool): MCM_RandomDialogPickerResult {
+    return makeResultFromSceneChoices(toSceneChoices(filtered_indexed_choices), choice_automated);
+  }
+
+  protected function makeResultFromSceneChoices(choices: array<SSceneChoice>, choice_automated: bool): MCM_RandomDialogPickerResult {
     var result: MCM_RandomDialogPickerResult;
 
     result.choice_automated = choice_automated;
-    result.filtered_choices = toSceneChoices(filtered_indexed_choices);
+    result.filtered_choices = choices;
 
     return result;
   }
@@ -336,18 +326,32 @@ statemachine class MCM_RandomDialogPicker {
   }
 
   protected function toFilteredIndexedChoices(choices: array<SSceneChoice>): array<MCM_IndexedChoice> {
+    var skip_filter: bool;
     var i: int;
     var filtered_indexed_choices: array<MCM_IndexedChoice>;
 
+    skip_filter = willFilterRemoveAllChoices(choices);
     for(i = 0; i < choices.Size(); i += 1)
     {
-      if(shouldFilterKeepChoice(choices[i]))
+      if(skip_filter || shouldFilterKeepChoice(choices[i]))
       {
         filtered_indexed_choices.PushBack(toIndexedChoice(choices[i], i));
       }
     }
 
     return filtered_indexed_choices;
+  }
+
+  protected function willFilterRemoveAllChoices(choices: array<SSceneChoice>): bool {
+    var i: int;
+
+    for(i = 0; i < choices.Size(); i += 1) {
+      if(shouldFilterKeepChoice(choices[i])) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   protected function shouldFilterKeepChoice(choice: SSceneChoice): bool {

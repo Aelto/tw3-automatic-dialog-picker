@@ -1,13 +1,14 @@
 ;meta[language=en]
 ; id      |key(hex)|key(str)| text
 2115766001|        |panel_Mods|Mods
-2115766002|        |panel_mcm_name|ADP
-2115766003|        |preset_Mods_mcm_name|Automatic Dialog Picker
-2115766004|        |preset_value_mcm_defaults|Default
-2115766005|        |preset_value_mcm_speed_run|Speed Run
-2115766006|        |preset_value_mcm_vanilla|Vanilla
-2115766007|        |option_mcm_automate|Automate Dialog Choices
-2115766008|        |option_mcm_optional_filter_level|Filter Optional Choices
-2115766009|        |preset_value_mcm_optional_filter_level_none|None
-2115766010|        |preset_value_mcm_optional_filter_level_read|Previously Chosen
-2115766011|        |preset_value_mcm_optional_filter_level_all|All (No Optional Dialogue)
+2115766002|        |panel_user_interface|User Interface
+2115766003|        |panel_mcm_name|ADP
+2115766004|        |preset_Mods_user_interface_mcm_name|Automatic Dialog Picker
+2115766005|        |preset_value_mcm_defaults|Default
+2115766006|        |preset_value_mcm_speed_run|Speed Run
+2115766007|        |preset_value_mcm_vanilla|Vanilla
+2115766008|        |option_mcm_automate|Automate Dialog Choices
+2115766009|        |option_mcm_optional_filter_level|Filter Optional Choices
+2115766010|        |preset_value_mcm_optional_filter_level_none|None
+2115766011|        |preset_value_mcm_optional_filter_level_read|Previously Chosen
+2115766012|        |preset_value_mcm_optional_filter_level_all|All (No Optional Dialogue)

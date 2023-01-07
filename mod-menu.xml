@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-16"?>
 <UserConfig>
-  <Group id="MCMgeneral" displayName="Mods.mcm_name">
+  <Group id="MCMgeneral" displayName="Mods.user_interface.mcm_name">
     <PresetsArray>
       <Preset id="0" displayName="mcm_defaults" >
         <Entry varId="MCMautomate" value="true" />
