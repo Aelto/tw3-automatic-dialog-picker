@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<UserConfig>
+  <Group id="MCMgeneral" displayName="Mods.mcm_name">
+    <PresetsArray>
+      <Preset id="0" displayName="mcm_defaults" >
+        <Entry varId="MCMautomate" value="true" />
+        <Entry varId="MCMoptionalFilterLevel" value="1" />
+      </Preset>
+      <Preset id="1" displayName="mcm_speed_run" >
+        <Entry varId="MCMautomate" value="true" />
+        <Entry varId="MCMoptionalFilterLevel" value="2" />
+      </Preset>
+      <Preset id="2" displayName="mcm_vanilla" >
+        <Entry varId="MCMautomate" value="false" />
+        <Entry varId="MCMoptionalFilterLevel" value="0" />
+      </Preset>
+    </PresetsArray>
+
+    <VisibleVars>
+      <Var id="MCMautomate" displayName="mcm_automate" displayType="TOGGLE" />
+      <Var id="VIRTUAL_MCMoptionalFilterLevel" displayName="mcm_optional_filter_level" displayType="OPTIONS" >
+        <OptionsArray>
+          <Option id="0" displayName="mcm_optional_filter_level_none">
+            <Entry varId="MCMoptionalFilterLevel" value="0"/>
+          </Option>
+          <Option id="1" displayName="mcm_optional_filter_level_read">
+            <Entry varId="MCMoptionalFilterLevel" value="1"/>
+          </Option>
+          <Option id="2" displayName="mcm_optional_filter_level_all">
+            <Entry varId="MCMoptionalFilterLevel" value="2"/>
+          </Option>
+        </OptionsArray>
+      </Var>
+    </VisibleVars>
+  </Group>
+</UserConfig>

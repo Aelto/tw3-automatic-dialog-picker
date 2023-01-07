@@ -53,8 +53,24 @@ statemachine class MCM_RandomDialogPicker {
     var i: int;
 
     better_flow_choice_weight = 0;
-    filtered_indexed_choices = toFilteredIndexedChoices(choices);
 
+    // handle special case where all choices are optional and mod settings are set to filter all
+    // optional (thus rendering us stuck).
+    if(MCMConfig_getOptionalDialogFilterLevel() == EMCM_All && allChoicesOptional(choices)) {
+      if(MCMConfig_automateChoices()) {
+        // if we are automating randomly choose
+        choices[RandRange(choices.Size())].emphasised = true;
+      } else {
+        // if we aren't automating, make the game think that all the optional choices are
+        // emphasized so that the player is prompted as if it was important
+        for(i = 0; i < choices.Size(); i += 1) {
+          choices[i].emphasised = true;
+        }
+      }
+      
+    }
+
+    filtered_indexed_choices = toFilteredIndexedChoices(choices);
     if (filtered_indexed_choices.Size() == 0) {
       return makeResult(filtered_indexed_choices, false);
     }
@@ -63,6 +79,11 @@ statemachine class MCM_RandomDialogPicker {
     // that the game selects the simulated index of the 0th element (instead of an element that may have
     // been filtered)
     dialog_module.OnDialogOptionSelected(0);
+
+    // due to mod settings, prevent automation
+    if(!MCMConfig_automateChoices()) {
+      return makeResult(filtered_indexed_choices, false);
+    }
 
     // this is a safety key to force the mod to show the option. There are cases
     // where it loops over and over and this keybind helps get out of them.
@@ -113,7 +134,7 @@ statemachine class MCM_RandomDialogPicker {
         emphasized_choices_count += 1;
       }
 
-      has_optional_choice = has_optional_choice || this.isOptionalChoice(current_choice);
+      has_optional_choice = has_optional_choice || this.isUnreadOptionalChoice(current_choice);
     }
 
     if (better_flow_choice_weight > 0) {
@@ -146,7 +167,7 @@ statemachine class MCM_RandomDialogPicker {
 
       // most important are optional dialogues
       if (has_optional_choice) {
-        if (this.isOptionalChoice(current_choice)) {
+        if (this.isUnreadOptionalChoice(current_choice)) {
           valid_choice_indices.PushBack(i);
         }
       }
@@ -199,13 +220,18 @@ statemachine class MCM_RandomDialogPicker {
     return 0;
   }
 
-  protected function isOptionalChoice(choice: SSceneChoice): bool {
-    return this.isReadOptionalChoice(choice)
+  protected function isUnreadOptionalChoice(choice: SSceneChoice): bool {
+    return this.isOptionalChoice(choice)
         && !choice.previouslyChoosen;
   }
 
   protected function isReadOptionalChoice(choice: SSceneChoice): bool {
-    return !choice.emphasised
+    return isOptionalChoice(choice)
+        && choice.previouslyChoosen;
+  }
+
+  protected function isOptionalChoice(choice: SSceneChoice): bool {
+    return !choice.emphasised 
         && choice.dialogAction == DialogAction_NONE;
   }
 
@@ -298,23 +324,43 @@ statemachine class MCM_RandomDialogPicker {
     return result;
   }
 
+  protected function allChoicesOptional(choices: array<SSceneChoice>): bool {
+    var all_choices_optional: bool;
+    var i: int;
+
+    for(i = 0, all_choices_optional = true; i < choices.Size(); i += 1) {
+      all_choices_optional = all_choices_optional && isOptionalChoice(choices[i]);
+    }
+
+    return all_choices_optional;
+  }
+
   protected function toFilteredIndexedChoices(choices: array<SSceneChoice>): array<MCM_IndexedChoice> {
     var i: int;
     var filtered_indexed_choices: array<MCM_IndexedChoice>;
 
     for(i = 0; i < choices.Size(); i += 1)
     {
-      if(
-        !choices[i].previouslyChoosen ||
-        this.isEmphasised(choices[i]) ||
-        this.isAction(choices[i]) ||
-        this.isLeaveAction(choices[i]))
+      if(shouldFilterKeepChoice(choices[i]))
       {
         filtered_indexed_choices.PushBack(toIndexedChoice(choices[i], i));
       }
     }
 
     return filtered_indexed_choices;
+  }
+
+  protected function shouldFilterKeepChoice(choice: SSceneChoice): bool {
+    var optional_filter_level: EMCM_OptionalDialogFilterLevel;
+
+    optional_filter_level = MCMConfig_getOptionalDialogFilterLevel();
+    if(optional_filter_level == EMCM_All && isOptionalChoice(choice)) {
+      return false;
+    } else if (optional_filter_level == EMCM_Read && isReadOptionalChoice(choice)) {
+      return false;
+    }
+
+    return true;
   }
 
   protected function toIndexedChoice(choice: SSceneChoice, simulated_index: int): MCM_IndexedChoice {
