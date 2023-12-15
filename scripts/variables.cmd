@@ -1,10 +1,9 @@
 @echo off
 
 REM update this path to point to your witcher 3 directory
-set gamePath=G:\GOG\The Witcher 3 Wild Hunt GOTY
+set gamePath=D:\programs\Steam\steamapps\common\The Witcher 3
 
 REM do not update anything below this line
 set modPath=%cd%\..
 set modName=modAutomaticDialogPicker
-set releaseName=AutomaticDialogPicker
-set modKitPath=D:\Dev\witcher3\ModKit\bin\x64
+set modKitPath=D:\programs\witcher_3_mod_tools\bin\x64
