@@ -506,6 +506,21 @@ state Loading in MCM_RandomDialogPicker {
 
     // Magic Lamp: Repeat the inscription.
     parent.short_circuit_choices.PushBack(GetLocStringById(558241));
+
+     // Hendrik Candle Puzzle: Turn Left Turn Right
+    this.short_circuit_choices.PushBack(GetLocStringById(474052));
+    this.short_circuit_choices.PushBack(GetLocStringById(474054));
+    this.short_circuit_choices.PushBack(GetLocStringById(474048));
+    this.short_circuit_choices.PushBack(GetLocStringById(474050));
+    this.short_circuit_choices.PushBack(GetLocStringById(474050));
+    this.short_circuit_choices.PushBack(GetLocStringById(474040));
+    this.short_circuit_choices.PushBack(GetLocStringById(474038));
+
+    // Race, Crow's Perch:
+    this.short_circuit_choices.PushBack(GetLocStringById(579270));
+    this.short_circuit_choices.PushBack(GetLocStringById(579373));
+    this.short_circuit_choices.PushBack(GetLocStringById(579375));
+    this.short_circuit_choices.PushBack(GetLocStringById(579374));
   }
 
   function loadbetter_flow_choice_weights() {
