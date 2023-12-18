@@ -474,7 +474,7 @@ state Loading in MCM_RandomDialogPicker {
 
     // Need to change some coin.
     parent.short_circuit_choices.PushBack(GetLocStringById(1104418));
-    
+
     // I'd like to change some coin.
     parent.short_circuit_choices.PushBack(GetLocStringById(1104531));
 
@@ -507,20 +507,55 @@ state Loading in MCM_RandomDialogPicker {
     // Magic Lamp: Repeat the inscription.
     parent.short_circuit_choices.PushBack(GetLocStringById(558241));
 
-     // Hendrik Candle Puzzle: Turn Left Turn Right
-    this.short_circuit_choices.PushBack(GetLocStringById(474052));
-    this.short_circuit_choices.PushBack(GetLocStringById(474054));
-    this.short_circuit_choices.PushBack(GetLocStringById(474048));
-    this.short_circuit_choices.PushBack(GetLocStringById(474050));
-    this.short_circuit_choices.PushBack(GetLocStringById(474050));
-    this.short_circuit_choices.PushBack(GetLocStringById(474040));
-    this.short_circuit_choices.PushBack(GetLocStringById(474038));
+    // Hendrik Candle Puzzle: Turn Left Turn Right
+    parent.short_circuit_choices.PushBack(GetLocStringById(474052));
+    parent.short_circuit_choices.PushBack(GetLocStringById(474054));
+    parent.short_circuit_choices.PushBack(GetLocStringById(474048));
+    parent.short_circuit_choices.PushBack(GetLocStringById(474050));
+    parent.short_circuit_choices.PushBack(GetLocStringById(474050));
+    parent.short_circuit_choices.PushBack(GetLocStringById(474040));
+    parent.short_circuit_choices.PushBack(GetLocStringById(474038));
 
     // Race, Crow's Perch:
-    this.short_circuit_choices.PushBack(GetLocStringById(579270));
-    this.short_circuit_choices.PushBack(GetLocStringById(579373));
-    this.short_circuit_choices.PushBack(GetLocStringById(579375));
-    this.short_circuit_choices.PushBack(GetLocStringById(579374));
+    parent.short_circuit_choices.PushBack(GetLocStringById(579270));
+    parent.short_circuit_choices.PushBack(GetLocStringById(579373));
+    parent.short_circuit_choices.PushBack(GetLocStringById(579375));
+    parent.short_circuit_choices.PushBack(GetLocStringById(579374));
+
+    // Race, Skelliger:
+    parent.short_circuit_choices.PushBack(GetLocStringById(575266));
+    parent.short_circuit_choices.PushBack(GetLocStringById(574690));
+    parent.short_circuit_choices.PushBack(GetLocStringById(576537));
+
+    // Contract Mysterious Tracks: Here about the contract.
+    parent.short_circuit_choices.PushBack(GetLocStringById(445108));
+
+    // Contract The Merry Widow: Here about the job.
+    parent.short_circuit_choices.PushBack(GetLocStringById(445122));
+
+    // Fools' Gold: Let's talk.
+    parent.short_circuit_choices.PushBack(GetLocStringById(522217));
+
+    // The Play's the Thing: We can start now.
+    parent.short_circuit_choices.PushBack(GetLocStringById(368277));
+
+    // The Play's the Thing
+    parent.short_circuit_choices.PushBack(GetLocStringById(396613));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396617));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396621));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396625));
+
+    // The Play's the Thing
+    parent.short_circuit_choices.PushBack(GetLocStringById(182706));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396633));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396637));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396641));
+
+    // The Play's the Thing
+    parent.short_circuit_choices.PushBack(GetLocStringById(182742));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396647));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396651));
+    parent.short_circuit_choices.PushBack(GetLocStringById(396655));
   }
 
   function loadbetter_flow_choice_weights() {
