@@ -63,13 +63,13 @@ statemachine class MCM_RandomDialogPicker {
     // filters possible choices based on mod settings
     filtered_indexed_choices = toFilteredIndexedChoices(choices);
     if (filtered_indexed_choices.Size() == 0) {
-      //uh oh we filtered everything... just send the original choices through!
+      // uh oh we filtered everything... just send the original choices through!
       return makeResultFromSceneChoices(choices, false);
     }
 
-    // this is a safety mechanism to make sure that if there is only one choice and we don't automate
-    // that the game selects the simulated index of the 0th element (instead of an element that may have
-    // been filtered)
+    // this is a safety mechanism to make sure that if there is only one choice
+    // and we don't automate that the game selects the simulated index of the
+    // 0th element (instead of an element that may have been filtered)
     dialog_module.OnDialogOptionSelected(0);
 
     // due to mod settings, prevent automation
@@ -94,7 +94,9 @@ statemachine class MCM_RandomDialogPicker {
 
       // anytime there is a leave action, do not pick anything.
       // but do this only in Toussaint, as this is where it causes most issues.
-      if (this.current_region == "bob" && this.isLeaveAction(current_choice) && better_flow_choice_weight <= 0) {
+      if (this.current_region == "bob"
+          && this.isLeaveAction(current_choice)
+          && better_flow_choice_weight <= 0) {
         return makeResult(filtered_indexed_choices, false);
       }
 
@@ -263,6 +265,7 @@ statemachine class MCM_RandomDialogPicker {
         || choice.dialogAction == DialogAction_GAME_DAGGER
         || choice.dialogAction == DialogAction_GAME_CARDS
         || choice.dialogAction == DialogAction_AUCTION
+
         // if it's an emphasised choice and it has an icon
         // it's always considered important
         || (
@@ -283,7 +286,6 @@ statemachine class MCM_RandomDialogPicker {
         || StrContains(lowercase, ")")
         || StrContains(lowercase, "[")
         || StrContains(lowercase, "]")
-        || StrContains(lowercase, "]")
         || StrContains(lowercase, "card")
         || StrContains(lowercase, "gwent")
         || StrContains(lowercase, "a round");
@@ -301,11 +303,17 @@ statemachine class MCM_RandomDialogPicker {
     return false;
   }
 
-  protected function makeResult(filtered_indexed_choices: array<MCM_IndexedChoice>, choice_automated: bool): MCM_RandomDialogPickerResult {
+  protected function makeResult(
+    filtered_indexed_choices: array<MCM_IndexedChoice>,
+    choice_automated: bool
+  ): MCM_RandomDialogPickerResult {
     return makeResultFromSceneChoices(toSceneChoices(filtered_indexed_choices), choice_automated);
   }
 
-  protected function makeResultFromSceneChoices(choices: array<SSceneChoice>, choice_automated: bool): MCM_RandomDialogPickerResult {
+  protected function makeResultFromSceneChoices(
+    choices: array<SSceneChoice>,
+    choice_automated: bool
+  ): MCM_RandomDialogPickerResult {
     var result: MCM_RandomDialogPickerResult;
 
     result.choice_automated = choice_automated;
