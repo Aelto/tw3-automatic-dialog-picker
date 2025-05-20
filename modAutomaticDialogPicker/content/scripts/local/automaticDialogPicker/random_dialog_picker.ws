@@ -73,7 +73,7 @@ statemachine class MCM_RandomDialogPicker {
     dialog_module.OnDialogOptionSelected(0);
 
     // due to mod settings, prevent automation
-    if(!MCMConfig_automateChoices()) {
+    if (!MCMConfig_automateChoices()) {
       return makeResult(filtered_indexed_choices, false);
     }
 
@@ -85,11 +85,12 @@ statemachine class MCM_RandomDialogPicker {
       current_choice_weight = this.getBetterFlowChoiceWeight(current_choice);
 
       if (!current_choice.previouslyChoosen && current_choice_weight > 0) {
-            if (better_flow_choice_weight < current_choice_weight) {
-              better_flow_choice_weight = current_choice_weight;
-              better_flow_choice_index = i;
-            }
-            continue;
+        if (better_flow_choice_weight < current_choice_weight) {
+          better_flow_choice_weight = current_choice_weight;
+          better_flow_choice_index = i;
+        }
+
+        continue;
       }
 
       // anytime there is a leave action, do not pick anything.
@@ -189,7 +190,7 @@ statemachine class MCM_RandomDialogPicker {
   }
 
   public function toSimulatedIndex(index: int) : int {
-    if(index < filtered_indexed_choices.Size()) {
+    if (index < filtered_indexed_choices.Size()) {
       return filtered_indexed_choices[index].simulated_index;
     } else {
       return index;
@@ -282,6 +283,19 @@ statemachine class MCM_RandomDialogPicker {
 
     lowercase = StrLower(description);
 
+    // IMPORTANT NOTE:
+    // 
+    // some lines were updated to no longer include these special characters as
+    // they weren't that important and could benefit from automatic selection by
+    // the mod:
+    // - quest "flying bovine":
+    //   - 1202617|00000000||[Wounds on the worker's body.]
+    //   - 1150029|00000000||[Cause of the accident.]
+    //   - 1150030|00000000||[Blunt trauma wounds on the cow.]
+    //   - 1150031|00000000||[Bite wounds on the cow.]
+    //   - 1150032|00000000||[Punctures and slashes on the cow.]
+    //   - 1150033|00000000||[Leave.]
+    //
     return StrContains(lowercase, "(")
         || StrContains(lowercase, ")")
         || StrContains(lowercase, "[")
@@ -334,15 +348,13 @@ statemachine class MCM_RandomDialogPicker {
   }
 
   protected function toFilteredIndexedChoices(choices: array<SSceneChoice>): array<MCM_IndexedChoice> {
+    var filtered_indexed_choices: array<MCM_IndexedChoice>;
     var skip_filter: bool;
     var i: int;
-    var filtered_indexed_choices: array<MCM_IndexedChoice>;
 
     skip_filter = willFilterRemoveAllChoices(choices);
-    for(i = 0; i < choices.Size(); i += 1)
-    {
-      if(skip_filter || shouldFilterKeepChoice(choices[i]))
-      {
+    for (i = 0; i < choices.Size(); i += 1) {
+      if (skip_filter || shouldFilterKeepChoice(choices[i])) {
         filtered_indexed_choices.PushBack(toIndexedChoice(choices[i], i));
       }
     }
@@ -354,7 +366,7 @@ statemachine class MCM_RandomDialogPicker {
     var i: int;
 
     for(i = 0; i < choices.Size(); i += 1) {
-      if(shouldFilterKeepChoice(choices[i])) {
+      if (shouldFilterKeepChoice(choices[i])) {
         return false;
       }
     }
@@ -366,9 +378,15 @@ statemachine class MCM_RandomDialogPicker {
     var optional_filter_level: EMCM_OptionalDialogFilterLevel;
 
     optional_filter_level = MCMConfig_getOptionalDialogFilterLevel();
-    if(optional_filter_level == EMCM_All && isOptionalChoice(choice)) {
+
+    if (optional_filter_level == EMCM_None) {
+      return true;
+    }
+    
+    if (optional_filter_level == EMCM_All && isOptionalChoice(choice)) {
       return false;
-    } else if (optional_filter_level == EMCM_Read && isReadOptionalChoice(choice)) {
+    }
+    else if (optional_filter_level == EMCM_Read && isReadOptionalChoice(choice)) {
       return false;
     }
 
