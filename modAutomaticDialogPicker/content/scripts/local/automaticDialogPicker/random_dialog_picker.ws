@@ -56,7 +56,11 @@ statemachine class MCM_RandomDialogPicker {
 
     // this is a safety key to force the mod to show the option. There are cases
     // where it loops over and over and this keybind helps get out of them.
-    if (theInput.IsActionPressed('ChangeChoiceDown') || theInput.IsActionPressed('ChangeChoiceUp')) {
+    if (
+      theInput.IsActionPressed('ChangeChoiceDown')
+      || theInput.IsActionPressed('ChangeChoiceUp')
+      || AbsF(theInput.GetActionValue('GI_AxisLeftY')) > 0.1
+    ) {
       return makeResultFromSceneChoices(choices, false);
     }
 
