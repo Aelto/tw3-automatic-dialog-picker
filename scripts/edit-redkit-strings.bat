@@ -1,0 +1,1 @@
+python D:\programs\witcher_3_mod_tools\redkit_strings_db_editor_nikich\RedkitStringsDBEditor.py
