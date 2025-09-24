@@ -4,17 +4,17 @@
 ::   - REDKIT_ROOT, a path to a REDkit install
 ::   - WITCHER_ROOT, a path to a Witcher 3 install
 :: Adjust the following path to point to the root of the mod that needs a blob:
-set modpath=%cd%\..\release\mods\modAutomaticDialogPicker
+set releasemod=%cd%\..\release\mods\modAutomaticDialogPicker
 
 :: path to the `/content/scripts` of the mod
-set modscripts=%modpath%\content\scripts
+set modscripts=%releasemod%\content\scripts
 
 set gamesfolder=D:\programs\Steam\steamapps\common
 set redkit=%REDKIT_ROOT%\bin\x64_RedKit
 set gamescripts=%WITCHER_ROOT%\content\content0\scripts
 
 :: where the `blob.rsblob` will be created
-set output=%modpath%\content
+set output=%releasemod%\content
 
 :: wcc_lite requires the current working directory to be inside redkit
 cd %redkit% 
