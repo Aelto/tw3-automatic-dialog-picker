@@ -586,6 +586,17 @@ state Loading in MCM_RandomDialogPicker {
     parent.short_circuit_choices.PushBack(GetLocStringById(396647));
     parent.short_circuit_choices.PushBack(GetLocStringById(396651));
     parent.short_circuit_choices.PushBack(GetLocStringById(396655));
+
+    // Barbers with dialogs that contain the "haircut" word,
+    // they're usually split in two options: one to select the haircut, another
+    // for the beard. But these choices don't have any icon so the mod may think
+    // they're ordinary optional choices.
+    parent.short_circuit_choices.PushBack(GetLocStringById(1066777));
+    parent.short_circuit_choices.PushBack(GetLocStringById(1066772));
+    parent.short_circuit_choices.PushBack(GetLocStringById(1092732));
+    parent.short_circuit_choices.PushBack(GetLocStringById(577814));
+    parent.short_circuit_choices.PushBack(GetLocStringById(577784));
+    parent.short_circuit_choices.PushBack(GetLocStringById(577797));
   }
 
   function loadbetter_flow_choice_weights() {
