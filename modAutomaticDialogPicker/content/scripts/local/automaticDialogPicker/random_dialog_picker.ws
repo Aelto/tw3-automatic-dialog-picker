@@ -13,6 +13,16 @@ struct MCM_IndexedChoice {
   var choice: SSceneChoice;
 }
 
+/**
+ * A note on the methods of this class & performances, you will sometimes find
+ * `out` parameters especially when structs are passed around. This is rarely
+ * to perform mutation on the parameters but rather to avoid the engine from
+ * copying the values as structs are passed by value and copied on function 
+ * calls, same for arrays.
+ * 
+ * So to avoid unnecessary copies of data the class uses out parameters to pass
+ * them by reference.
+ */
 statemachine class MCM_RandomDialogPicker {
   protected var dialog_module: CR4HudModuleDialog;
   protected var picked_choice_index: int;
@@ -37,7 +47,7 @@ statemachine class MCM_RandomDialogPicker {
     this.GotoState('Loading');
   }
 
-  public function handleCurrentChoices(choices: array<SSceneChoice>): MCM_RandomDialogPickerResult {
+  public function handleCurrentChoices(out choices: array<SSceneChoice>): MCM_RandomDialogPickerResult {
     var result: MCM_RandomDialogPickerResult;
     var valid_choice_indices: array<int>;
     var has_leave_action: bool;
@@ -201,7 +211,7 @@ statemachine class MCM_RandomDialogPicker {
     }
   }
 
-  protected function getBetterFlowChoiceWeight(choice: SSceneChoice): int {
+  protected function getBetterFlowChoiceWeight(out choice: SSceneChoice): int {
     var i: int;
 
     for (i = 0; i < this.better_flow_weights.Size(); i += 1) {
@@ -213,47 +223,47 @@ statemachine class MCM_RandomDialogPicker {
     return 0;
   }
 
-  protected function isUnreadOptionalChoice(choice: SSceneChoice): bool {
+  protected function isUnreadOptionalChoice(out choice: SSceneChoice): bool {
     return this.isOptionalChoice(choice)
         && !choice.previouslyChoosen;
   }
 
-  protected function isReadOptionalChoice(choice: SSceneChoice): bool {
+  protected function isReadOptionalChoice(out choice: SSceneChoice): bool {
     return isOptionalChoice(choice)
         && choice.previouslyChoosen;
   }
 
-  protected function isOptionalChoice(choice: SSceneChoice): bool {
+  protected function isOptionalChoice(out choice: SSceneChoice): bool {
     return !choice.emphasised 
         && choice.dialogAction == DialogAction_NONE;
   }
 
-  protected function isEmphasised(choice: SSceneChoice): bool {
+  protected function isEmphasised(out choice: SSceneChoice): bool {
     return choice.emphasised
         && !choice.previouslyChoosen;
   }
 
-  protected function isLeaveAction(choice: SSceneChoice): bool {
+  protected function isLeaveAction(out choice: SSceneChoice): bool {
     return choice.dialogAction == DialogAction_EXIT;
   }
 
-  protected function isAction(choice: SSceneChoice): bool {
+  protected function isAction(out choice: SSceneChoice): bool {
     return !choice.emphasised
         && choice.dialogAction != DialogAction_NONE
         && !this.isLeaveAction(choice);
   }
 
-  protected function isBribeAction(choice: SSceneChoice): bool {
+  protected function isBribeAction(out choice: SSceneChoice): bool {
     return choice.dialogAction == DialogAction_BRIBE
         || choice.dialogAction == DialogAction_MONSTERCONTRACT;
   }
 
-  protected function isAxiiAction(choice: SSceneChoice): bool {
+  protected function isAxiiAction(out choice: SSceneChoice): bool {
     return choice.dialogAction == DialogAction_AXII
         || choice.dialogAction == DialogAction_PERSUASION;
   }
 
-  protected function isImportantAction(choice: SSceneChoice): bool {
+  protected function isImportantAction(out choice: SSceneChoice): bool {
     return this.isBribeAction(choice)
         || this.isAxiiAction(choice)
         || choice.dialogAction == DialogAction_HOUSE
@@ -309,7 +319,7 @@ statemachine class MCM_RandomDialogPicker {
         || StrContains(lowercase, "a round");
   }
 
-  protected function isShortCircuitChoice(choice: SSceneChoice): bool {
+  protected function isShortCircuitChoice(out choice: SSceneChoice): bool {
     var i: int;
 
     for (i = 0; i < this.short_circuit_choices.Size(); i += 1) {
@@ -322,14 +332,17 @@ statemachine class MCM_RandomDialogPicker {
   }
 
   protected function makeResult(
-    filtered_indexed_choices: array<MCM_IndexedChoice>,
+    out filtered_indexed_choices: array<MCM_IndexedChoice>,
     choice_automated: bool
   ): MCM_RandomDialogPickerResult {
-    return makeResultFromSceneChoices(toSceneChoices(filtered_indexed_choices), choice_automated);
+    return makeResultFromSceneChoices(
+      toSceneChoices(filtered_indexed_choices), 
+      choice_automated
+    );
   }
 
   protected function makeResultFromSceneChoices(
-    choices: array<SSceneChoice>,
+    out choices: array<SSceneChoice>,
     choice_automated: bool
   ): MCM_RandomDialogPickerResult {
     var result: MCM_RandomDialogPickerResult;
@@ -340,7 +353,7 @@ statemachine class MCM_RandomDialogPicker {
     return result;
   }
 
-  protected function allChoicesOptional(choices: array<SSceneChoice>): bool {
+  protected function allChoicesOptional(out choices: array<SSceneChoice>): bool {
     var all_choices_optional: bool;
     var i: int;
 
@@ -351,7 +364,7 @@ statemachine class MCM_RandomDialogPicker {
     return all_choices_optional;
   }
 
-  protected function toFilteredIndexedChoices(choices: array<SSceneChoice>): array<MCM_IndexedChoice> {
+  protected function toFilteredIndexedChoices(out choices: array<SSceneChoice>): array<MCM_IndexedChoice> {
     var filtered_indexed_choices: array<MCM_IndexedChoice>;
     var skip_filter: bool;
     var i: int;
@@ -366,7 +379,7 @@ statemachine class MCM_RandomDialogPicker {
     return filtered_indexed_choices;
   }
 
-  protected function willFilterRemoveAllChoices(choices: array<SSceneChoice>): bool {
+  protected function willFilterRemoveAllChoices(out choices: array<SSceneChoice>): bool {
     var i: int;
 
     for(i = 0; i < choices.Size(); i += 1) {
@@ -378,7 +391,7 @@ statemachine class MCM_RandomDialogPicker {
     return true;
   }
 
-  protected function shouldFilterKeepChoice(choice: SSceneChoice): bool {
+  protected function shouldFilterKeepChoice(out choice: SSceneChoice): bool {
     var optional_filter_level: EMCM_OptionalDialogFilterLevel;
 
     optional_filter_level = MCMConfig_getOptionalDialogFilterLevel();
@@ -397,7 +410,7 @@ statemachine class MCM_RandomDialogPicker {
     return true;
   }
 
-  protected function toIndexedChoice(choice: SSceneChoice, simulated_index: int): MCM_IndexedChoice {
+  protected function toIndexedChoice(out choice: SSceneChoice, simulated_index: int): MCM_IndexedChoice {
     var indexedChoice: MCM_IndexedChoice;
     
     indexedChoice.simulated_index = simulated_index;
@@ -406,7 +419,7 @@ statemachine class MCM_RandomDialogPicker {
     return indexedChoice;
   }
 
-  private function toSceneChoices(indexed_choices: array<MCM_IndexedChoice>): array<SSceneChoice> {
+  private function toSceneChoices(out indexed_choices: array<MCM_IndexedChoice>): array<SSceneChoice> {
     var i: int;
     var choices: array<SSceneChoice>;
 
@@ -417,7 +430,7 @@ statemachine class MCM_RandomDialogPicker {
     return choices;
   }
 
-  protected function printChoice(choice: SSceneChoice) {
+  protected function printChoice(out choice: SSceneChoice) {
     // NLOG(
     //   "is emphasised: " + choice.emphasised +
     //   " action: " + choice.dialogAction +
