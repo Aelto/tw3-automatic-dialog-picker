@@ -127,7 +127,7 @@ statemachine class MCM_RandomDialogPicker {
 
       // most important are optional dialogues
       if (has_optional_choice) {
-        if (this.isOptionalChoice(choice)) {
+        if (this.isUnreadOptionalChoice(choice)) {
           valid_choices.PushBack(i);
         }
       }
